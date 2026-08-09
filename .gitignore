@@ -6,4 +6,5 @@ project-notes/
 *.map
 *.o
 *.d
+*.xcf
 .DS_Store
