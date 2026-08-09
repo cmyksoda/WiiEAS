@@ -1,0 +1,9 @@
+build/
+built/
+project-notes/
+*.dol
+*.elf
+*.map
+*.o
+*.d
+.DS_Store
