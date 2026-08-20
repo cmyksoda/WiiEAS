@@ -16,6 +16,8 @@ Data comes from the free public [GlobalEAS Central Alert Repository](https://ale
 
 The audio signals streamed in this app contain unmodified SAME data codes, which if picked up by a nearby microphone, smart speaker, ham radio, or PC running decoder software, could accidentally trigger real emergency alert systems. Broadcasting these tones over the internet or over radio waves may violate federal laws and result in severe penalties.
 
+You are solely responsible for how and where the audio is played. The author is not liable for misuse of the tones provided by this application.
+
 ## Features
 
 - **DASDEC-style** full-screen layout
