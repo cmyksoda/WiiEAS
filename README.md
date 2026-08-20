@@ -1,6 +1,6 @@
 # WiiEAS
 
-Live **Emergency Alert System** alerts from across the United States on the Nintendo Wii, drawn to resemble a **DASDEC** emergency alert screen — purple-blue field, red border, white monospaced text, page flips for long messages.
+Live **Emergency Alert System** alerts from across the United States on the Nintendo Wii, drawn to resemble a **DASDEC** (Digital Alert Systems Decoder) emergency alert screen, the hardware used by many US cable companies — purple-blue field, red border, white monospaced text, page flips for long messages.
 
 Data comes from the free public [GlobalEAS Central Alert Repository](https://alerts.globaleas.org/) API. Audio is the official MP3 hosted on their CDN.
 
@@ -24,7 +24,7 @@ You are solely responsible for how and where the audio is played. The author is 
 - **Active alerts** from across the United States
 - **Details panel** (sent time, expiration time, alert type, callsign, originator)
 - **Consistently polls** the API every 60s (same cadence as the CAR website)
-- **Auto play**: if left on, new alerts will automatically play as they are retrieved.
+- **Auto play**: if left on, new alerts will automatically play as they are retrieved
 
 ## Build
 
@@ -43,7 +43,7 @@ Produces `boot.dol` / `boot.elf` for the Homebrew Channel.
 
 ### Install on SD
 
-Copy `WiiEAS` folder to your `apps` folder.
+Copy `WiiEAS` folder to your `apps` folder on the root of your SD card.
 
 ## Controls/Usage
 
