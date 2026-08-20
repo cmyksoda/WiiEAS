@@ -66,7 +66,7 @@ Documented at https://alerts.globaleas.org/swagger/index.html:
 - `GET /api/v1/alerts/active` → array of alerts  
 - Each alert has `translation` (display text) and `audioUrl` (MP3)
 
-## Disclaimer
+## Notice
 
 This is a **fan / homebrew viewer** of publicly syndicated EAS data. It is **not** an official warning device, not a substitute for NOAA Weather Radio / WEA / local broadcast, and not affiliated with GlobalEAS, Digital Alert Systems, or any government agency.
 
