@@ -21,7 +21,6 @@
 #include "audio_player.h"
 
 #include <asndlib.h>
-#include <stdlib.h>
 
 /* Refresh cadence in frames (~60 s NTSC), matching the CAR site's 60 s poll.
  * Frame-counted because ticks_to_millisecs runs hot on Dolphin. */
@@ -265,8 +264,8 @@ int main(int argc, char **argv)
 	(void)argc;
 	(void)argv;
 
-	/* Init order from VectrexWii: video → pads → audio; network last, and it
-	 * must not re-init WPAD. */
+	/* Init order: video → pads → audio; network last, and it must not
+	 * re-init WPAD. */
 	VIDEO_Init();
 	video_blank_early();
 	GRRLIB_Init();

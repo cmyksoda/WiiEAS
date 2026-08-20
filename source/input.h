@@ -29,10 +29,4 @@ u32 input_poll(void);
 /* Non-zero while HOME / Classic HOME / GC Start is held on any pad. */
 int input_home_held(void);
 
-/* Diagnostics: raw PAD held, WPAD held, and the last input_poll() actions. */
-void input_debug_raw(u16 *out_pad, u32 *out_wpad, u32 *out_act);
-
-/* Non-zero if any WPAD channel reports a connected remote this frame. */
-int input_wiimote_connected(void);
-
 #endif

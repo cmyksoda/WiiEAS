@@ -33,9 +33,6 @@ void dasdec_prev_page(void);
 /* Call once per rendered frame. Auto-advances multi-page alerts (~5 s/page). */
 void dasdec_auto_page_tick(void);
 
-int  dasdec_page(void);       /* 0-based */
-int  dasdec_page_count(void);
-
 /* status_line: top bezel (empty = nothing to report); auto_play adds AUTO to
  * the bottom line; show_details draws the info panel. */
 void dasdec_draw(const char *status_line, int auto_play, int show_details);

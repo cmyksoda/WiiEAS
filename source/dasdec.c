@@ -47,7 +47,6 @@ typedef struct {
 	int  index;   /* 1-based display index among active alerts */
 	int  total;
 	int  has_alert;
-	int  max_text_w; /* pixel width used for wrapping */
 	char type[CAR_TYPE_LEN];
 	char severity[CAR_SEV_LEN];
 	char callsign[CAR_CALL_LEN];
@@ -124,11 +123,10 @@ static void push_line(const char *line)
 static void wrap_text(const char *text)
 {
 	s.line_count = 0;
-	s.max_text_w = text_area_width();
 	if (!text || !text[0])
 		return;
 
-	const int max_w = s.max_text_w;
+	const int max_w = text_area_width();
 	char line[MAX_LINE_CHARS];
 	line[0] = '\0';
 	size_t line_len = 0;
@@ -236,7 +234,6 @@ static void wrap_text(const char *text)
 void dasdec_set_message(const char *msg)
 {
 	clear_layout();
-	s.max_text_w = text_area_width();
 	s.has_alert = 0;
 	push_line((msg && msg[0]) ? msg : "");
 	s.page_count = 1;
@@ -249,7 +246,6 @@ void dasdec_set_alert(const CarAlert *alert, int index, int total)
 	s.total = total;
 	s.page_frames = 0;
 	s.has_alert = 0;
-	s.max_text_w = text_area_width();
 
 	if (!alert) {
 		push_line("NO ACTIVE ALERTS");
@@ -296,9 +292,6 @@ void dasdec_auto_page_tick(void)
 		s.page_frames = 0;
 	}
 }
-
-int dasdec_page(void) { return s.page; }
-int dasdec_page_count(void) { return s.page_count; }
 
 static void draw_border_box(f32 x, f32 y, f32 w, f32 h, f32 thick, u32 color)
 {
@@ -506,7 +499,6 @@ void dasdec_draw(const char *status_line, int auto_play, int show_details)
 	const f32 box_w = scr_w - margin_x * 2.0f;
 	const f32 box_h = scr_h - margin_y * 2.0f;
 
-	/* Fill interior blue first, then red frame on top. */
 	GRRLIB_Rectangle(box_x, box_y, box_w, box_h, DASDEC_BG, true);
 	draw_border_box(box_x, box_y, box_w, box_h, thick, DASDEC_BORDER);
 

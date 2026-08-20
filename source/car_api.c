@@ -19,7 +19,7 @@ static int alert_newer_first(const void *a, const void *b)
 	const CarAlert *x = (const CarAlert *)a;
 	const CarAlert *y = (const CarAlert *)b;
 	if (x->start_epoch != y->start_epoch)
-		return (x->start_epoch < y->start_epoch) ? 1 : -1; /* higher epoch first */
+		return (x->start_epoch < y->start_epoch) ? 1 : -1;
 	if (x->id != y->id)
 		return (x->id < y->id) ? 1 : -1;
 	return 0;
@@ -106,7 +106,6 @@ static int decode_json_string(const char **pp, const char *end, char *out, size_
 				else if (cp == 0x201C || cp == 0x201D) c = '"';
 				else if (cp < 0x80) c = (unsigned char)cp;
 				else if (cp == 0x2026) {
-					/* ellipsis as three dots if room */
 					if (o + 3 < out_cap) {
 						out[o++] = '.'; out[o++] = '.'; out[o++] = '.';
 					}

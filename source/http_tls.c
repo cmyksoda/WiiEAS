@@ -1,6 +1,6 @@
 /**
  * Minimal HTTPS GET for the Wii: libogc net_* + mbedTLS.
- * Adapted from WiiFin's JellyfinClient TLS path (VERIFY_NONE — no CA bundle).
+ * VERIFY_NONE — no CA bundle ships on the Wii.
  */
 #include "http_tls.h"
 
@@ -230,7 +230,7 @@ int https_get(const char *host, int port, const char *path,
 			failed = 1;
 			break;
 		}
-		/* No CA bundle on Wii — VERIFY_NONE (same as WiiFin default path). */
+		/* No CA bundle on Wii — VERIFY_NONE. */
 		mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_NONE);
 		mbedtls_ssl_conf_rng(&conf, mbedtls_ctr_drbg_random, &ctr_drbg);
 
@@ -398,7 +398,6 @@ int https_get_url(const char *url,
 	else
 		host_len = strlen(p);
 
-	/* host may be host:port */
 	for (size_t i = 0; i < host_len; i++) {
 		if (p[i] == ':') {
 			colon = p + i;

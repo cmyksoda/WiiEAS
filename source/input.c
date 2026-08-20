@@ -1,5 +1,5 @@
 /*
- * Wiimote / Nunchuk / Classic / GC input (VectrexWii/WiiRadio WPAD pattern).
+ * Wiimote / Nunchuk / Classic / GC input.
  * Channels 0-3 are all formatted and OR-ed so Dolphin's remote is seen.
  */
 #include "input.h"
@@ -14,11 +14,7 @@
 #define GC_STICK_DZ  32
 
 static int s_home_held;
-static int s_wii_connected;
 static u8  s_fmt_done[4];   /* format applied since this channel last connected */
-static u16 s_dbg_pad;
-static u32 s_dbg_wpad;
-static u32 s_dbg_act;
 
 static u32 expansion_edges_chan0(void)
 {
@@ -149,7 +145,6 @@ void input_init(void)
 		s_fmt_done[ch] = 0;
 	}
 	PAD_Init();
-	s_wii_connected = 0;
 }
 
 void input_reinit(void)
@@ -169,7 +164,6 @@ u32 input_poll(void)
 {
 	u32 actions = 0;
 	s_home_held = 0;
-	s_wii_connected = 0;
 
 	WPAD_ScanPads();
 	PAD_ScanPads();
@@ -179,7 +173,6 @@ u32 input_poll(void)
 	for (int ch = 0; ch < 4; ch++) {
 		u32 t = 0;
 		if (WPAD_Probe(ch, &t) == WPAD_ERR_NONE) {
-			s_wii_connected = 1;
 			/* Remotes associate asynchronously — SetDataFormat at init is a
 			 * no-op, so re-apply the first frame a channel reports in. */
 			if (!s_fmt_done[ch]) {
@@ -192,17 +185,15 @@ u32 input_poll(void)
 		w_down |= WPAD_ButtonsDown(ch);
 		w_held |= WPAD_ButtonsHeld(ch);
 	}
-	/* Stick edges only on chan 0 expansion (same as Vectrex). */
+	/* Stick edges only on chan 0 expansion. */
 	w_down |= expansion_edges_chan0();
 
-	s_dbg_wpad = w_held;
 	map_wpad(w_down, &actions);
 	if (w_held & (WPAD_BUTTON_HOME | WPAD_CLASSIC_BUTTON_HOME))
 		s_home_held = 1;
 
 	u16 gd = (u16)(PAD_ButtonsDown(0) | gc_stick_edges());
 	u16 gh = PAD_ButtonsHeld(0);
-	s_dbg_pad = gh;
 
 	if (gd & PAD_BUTTON_LEFT)  actions |= IN_LEFT;
 	if (gd & PAD_BUTTON_RIGHT) actions |= IN_RIGHT;
@@ -218,23 +209,10 @@ u32 input_poll(void)
 	if (gd & PAD_BUTTON_START) actions |= IN_PLUS;
 	if (gh & PAD_BUTTON_START) s_home_held = 1;
 
-	s_dbg_act = actions;
 	return actions;
 }
 
 int input_home_held(void)
 {
 	return s_home_held;
-}
-
-void input_debug_raw(u16 *out_pad, u32 *out_wpad, u32 *out_act)
-{
-	if (out_pad)  *out_pad  = s_dbg_pad;
-	if (out_wpad) *out_wpad = s_dbg_wpad;
-	if (out_act)  *out_act  = s_dbg_act;
-}
-
-int input_wiimote_connected(void)
-{
-	return s_wii_connected;
 }
