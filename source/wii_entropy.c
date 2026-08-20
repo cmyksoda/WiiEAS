@@ -1,10 +1,6 @@
-/**
- * mbedtls_hardware_poll for the Wii Broadway timebase.
- * Required when mbedTLS is built with MBEDTLS_ENTROPY_HARDWARE_ALT
- * (as the WiiFin-configured portlibs libs are).
- *
- * Pattern taken from the VectrexWii / WiiFin work — spin on gettime() so the
- * LSBs actually vary between samples.
+/*
+ * mbedtls_hardware_poll from the Broadway timebase (the portlibs mbedTLS is
+ * built with MBEDTLS_ENTROPY_HARDWARE_ALT). Spin on gettime() so LSBs vary.
  */
 #include <mbedtls/build_info.h>
 

@@ -1,9 +1,6 @@
-/**
- * DASDEC-style character generator.
- *
- * Real CG: black outside a red rectangular frame, deep blue-violet interior,
- * centered white Luxi Mono Bold text, page counter at the bottom of the box.
- * App chrome (AUTO / status / help) is tiny text on the black bezel only.
+/*
+ * DASDEC-style character generator: black outside a red frame, blue-violet
+ * interior, centered white text and page counter; app chrome on the bezel.
  */
 #include "dasdec.h"
 
@@ -26,27 +23,14 @@
 #define FONT_SIZE_PAGE      16
 #define FONT_SIZE_PANEL     16
 #define FONT_SIZE_CHROME    12
-/*
- * Page dwell in *frames*, not wall-clock ms. ticks_to_millisecs can run hot on
- * Dolphin and made a "5000 ms" hold feel like 1–2 s. At 60 Hz, 300 ≈ 5 s;
- * at 50 Hz PAL it's 6 s — both fine.
- */
+/* Page dwell in frames, not ms — ticks_to_millisecs runs hot on Dolphin.
+ * 300 ≈ 5 s at 60 Hz, 6 s at 50 Hz PAL. */
 #define PAGE_HOLD_FRAMES    300
 
 /* Layout constants — keep wrap and draw in lockstep so text never leaves the box. */
 #define LAYOUT_MARGIN_X     36.0f
-/*
- * App chrome sits on the black bezel: the status line on the top edge, the
- * index / AUTO / AUDIO line on the bottom edge, each the same distance from
- * its own edge so the pair reads as symmetrical top-to-bottom.
- *
- * The pad is set by CRT overscan, not by looks. A tube typically eats 5-8% of
- * each edge; on 480 lines that's 24-38 px, and the old 14 px from the bottom
- * edge put the status line — including "Downloading..." — straight into the
- * part of the picture a CRT never shows. 32 px clears 5% comfortably and most
- * of 8%. Raising it further is fine down to ~60: past that LAYOUT_MARGIN_Y
- * squeezes the box below the 360 px that ten body lines need.
- */
+/* Chrome pad is set by CRT overscan (tubes eat 5-8% per edge ≈ 24-38 px at
+ * 480 lines), not looks. Past ~60 the box drops below the ten-line height. */
 #define LAYOUT_CHROME_PAD   32.0f   /* screen edge  -> chrome glyphs */
 #define LAYOUT_CHROME_GAP   8.0f    /* chrome glyphs -> red frame */
 /* Equal top and bottom margins keep the CG box centred between the two lines. */
@@ -135,10 +119,8 @@ static void push_line(const char *line)
 	s.line_count++;
 }
 
-/*
- * Pixel-aware word wrap so glyphs never spill past the red border.
- * Soft-wrap on spaces; hard-break overlong tokens by character width.
- */
+/* Pixel-aware word wrap: soft-wrap on spaces, hard-break overlong tokens, so
+ * glyphs never spill past the red border. */
 static void wrap_text(const char *text)
 {
 	s.line_count = 0;
@@ -359,22 +341,13 @@ static void format_relative(s64 epoch, int as_expiry, char *buf, size_t n)
 	if (epoch <= 0 || n < 8)
 		return;
 
-	/*
-	 * Alert epochs are UTC, but the Wii clock is the console's *local* time —
-	 * comparing them raw shifted everything by the local UTC offset, so an
-	 * alert sent moments ago read as "in 5 hours". s_utc_offset (learned from
-	 * the HTTP Date: header, pushed in by main after each fetch) corrects the
-	 * clock back to real UTC.
-	 */
+	/* Alert epochs are UTC but the Wii clock is local time; s_utc_offset
+	 * (from the HTTP Date: header) corrects time(NULL) to real UTC. */
 	s64 now = (s64)time(NULL) + s_utc_offset;
 	if (now < 1577836800 || now > 4102444800)
 		return;
 
-	/*
-	 * Signed seconds until epoch — negative means it already happened.
-	 * Computing this the other way round for "Sent" inverted the wording:
-	 * an alert sent 8 minutes ago rendered as "in 8 minutes".
-	 */
+	/* Signed seconds until epoch — negative means it already happened. */
 	s64 diff = epoch - now;
 	int past = diff < 0;
 	if (past)
@@ -409,11 +382,8 @@ static void format_relative(s64 epoch, int as_expiry, char *buf, size_t n)
 	}
 }
 
-/*
- * Two-column row: labels share one pixel column, values share another.
- * Using %-Ns with TTF was misaligned (glyph advances ≠ fixed cells; size
- * changes shift the value column). Measure "Originator " once for the gap.
- */
+/* Two-column rows: labels and values each share a pixel column — %-Ns with
+ * TTF misaligns (glyph advances aren't fixed cells). */
 static int s_value_x;
 
 static void panel_row(int left, int right, int y, unsigned size,
@@ -510,15 +480,11 @@ static void draw_details_panel(void)
 	}
 
 	y += 4;
-	/* Same size + white as every other title row; full hash. */
 	if (s.hash[0])
 		panel_row(left, right, y, body, "ID", s.hash, DASDEC_TEXT);
 
-	/*
-	 * 28 px above the border, not 18: GRRLIB's TTF path puts the *baseline*
-	 * around y + size, so at 18 px the glyph bottoms grazed the red border and
-	 * the line looked clipped on hardware.
-	 */
+	/* 28 px, not 18: GRRLIB's TTF baseline sits near y + size, so less
+	 * clearance grazes the red border on hardware. */
 	y = (int)(panel_y + panel_h - thick - 28.0f);
 	GRRLIB_PrintfTTF(left, y, s_font, "+ / B  close", FONT_SIZE_CHROME, DASDEC_DIM);
 }
@@ -590,16 +556,8 @@ void dasdec_draw(const char *status_line, int auto_play, int show_details)
 		GRRLIB_PrintfTTF(px, page_y, s_font, pagebuf, FONT_SIZE_PAGE, DASDEC_TEXT);
 	}
 
-	/*
-	 * App chrome on the black bezel — one centred line at each edge, purple
-	 * (same family as the box fill) so they don't shout over the CG.
-	 *   top:     status  (empty unless there's something to report — the
-	 *            controls legend that used to idle here lives in the README)
-	 *   bottom:  1/30  AUTO
-	 *
-	 * No AUDIO flag: the status line says PLAYING when playback starts, which
-	 * is the same information a beat earlier.
-	 */
+	/* Chrome: status centred on the top bezel, "1/30  AUTO" on the bottom,
+	 * purple so it doesn't shout over the CG. */
 	const int chrome_top_y = (int)LAYOUT_CHROME_PAD;
 	const int chrome_bot_y = (int)(scr_h - LAYOUT_CHROME_PAD
 	                               - (f32)FONT_SIZE_CHROME);

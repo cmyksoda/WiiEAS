@@ -29,12 +29,7 @@ u32 input_poll(void);
 /* Non-zero while HOME / Classic HOME / GC Start is held on any pad. */
 int input_home_held(void);
 
-/*
- * Diagnostics for the status bezel:
- *   out_pad  — PAD_ButtonsHeld(0)
- *   out_wpad — WPAD_ButtonsHeld(0)
- *   out_act  — last actions bitfield from input_poll
- */
+/* Diagnostics: raw PAD held, WPAD held, and the last input_poll() actions. */
 void input_debug_raw(u16 *out_pad, u32 *out_wpad, u32 *out_act);
 
 /* Non-zero if any WPAD channel reports a connected remote this frame. */

@@ -1,18 +1,6 @@
-/**
- * Input for Wiimote / Nunchuk / Classic / GameCube.
- *
- * Emulated Wiimote in Dolphin does not use real BT; it still goes through
- * WPAD_*. VectrexWii + WiiRadio both work for this user — we take the
- * intersection that both use:
- *   WPAD_Init
- *   WPAD_SetDataFormat(..., WPAD_FMT_BTNS_ACC_IR)
- *   WPAD_SetVRes(...)
- *   PAD_Init
- *   per frame: WPAD_ScanPads + PAD_ScanPads + ButtonsDown
- *
- * And we set format/VRes on *every* channel 0..3 (WiiRadio uses CHAN_ALL;
- * Vectrex uses 0). Reading ORs all channels so wherever Dolphin parks the
- * emulated remote, we see it.
+/*
+ * Wiimote / Nunchuk / Classic / GC input (VectrexWii/WiiRadio WPAD pattern).
+ * Channels 0-3 are all formatted and OR-ed so Dolphin's remote is seen.
  */
 #include "input.h"
 
@@ -39,12 +27,8 @@ static u32 expansion_edges_chan0(void)
 	u32 down = 0;
 	u8 is_up = 0, is_down = 0, is_left = 0, is_right = 0;
 
-	/*
-	 * WPAD_Expansion returns void and leaves exp untouched when the channel
-	 * has no controller, so an uninitialised struct could report a garbage
-	 * type and feed junk stick angles in as phantom D-pad edges. Zero first:
-	 * WPAD_EXP_NONE == 0, which falls through to the "no expansion" branch.
-	 */
+	/* WPAD_Expansion leaves exp untouched with nothing connected — zero it so
+	 * a garbage type can't feed phantom D-pad edges (WPAD_EXP_NONE == 0). */
 	memset(&exp, 0, sizeof(exp));
 	WPAD_Expansion(0, &exp);
 
@@ -144,12 +128,8 @@ static void map_wpad(u32 bits, u32 *a)
 	if (bits & WPAD_CLASSIC_BUTTON_Y)     *a |= IN_1;
 }
 
-/*
- * Set format on every logical channel. Dolphin's emulated remote is usually
- * chan 0, but OR-ing all four is cheap and matches WiiRadio's "look at every
- * pad" approach without WPAD_CHAN_ALL (-1) quirks on SetDataFormat for some
- * libogc builds.
- */
+/* Per-channel, not WPAD_CHAN_ALL — SetDataFormat with -1 is quirky on some
+ * libogc builds. */
 static void apply_wpad_format(int ch)
 {
 	u32 w = 640, h = 480;
@@ -200,11 +180,8 @@ u32 input_poll(void)
 		u32 t = 0;
 		if (WPAD_Probe(ch, &t) == WPAD_ERR_NONE) {
 			s_wii_connected = 1;
-			/*
-			 * Remotes associate asynchronously, so at input_init() time no
-			 * channel is connected yet and SetDataFormat/SetVRes are no-ops.
-			 * Re-apply the first frame a channel actually reports in.
-			 */
+			/* Remotes associate asynchronously — SetDataFormat at init is a
+			 * no-op, so re-apply the first frame a channel reports in. */
 			if (!s_fmt_done[ch]) {
 				apply_wpad_format(ch);
 				s_fmt_done[ch] = 1;
@@ -233,9 +210,7 @@ u32 input_poll(void)
 	if (gd & PAD_BUTTON_DOWN)  actions |= IN_DOWN;
 	if (gd & PAD_BUTTON_A)     actions |= IN_A;
 	if (gd & PAD_BUTTON_B)     actions |= IN_B;
-	/* Pages on the face pair (Y/X) and the shoulder pair (L/R), same sense.
-	 * Y and L used to emit IN_MINUS, which main.c never consumes — both were
-	 * dead buttons despite Y/X being documented as the page controls. */
+	/* Pages on Y/X and L/R — IN_MINUS is never consumed by main.c. */
 	if (gd & PAD_BUTTON_Y)     actions |= IN_1;
 	if (gd & PAD_BUTTON_X)     actions |= IN_2;
 	if (gd & PAD_TRIGGER_L)    actions |= IN_1;

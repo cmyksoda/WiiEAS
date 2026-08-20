@@ -33,16 +33,8 @@ static void set_err(char *err, size_t err_len, const char *msg)
 	snprintf(err, err_len, "%s", msg);
 }
 
-/*
- * UTC reference from the server.
- *
- * The Wii clock is set to the console's *local* time and carries no time zone,
- * but alert epochs are UTC — so comparing them against time(NULL) shifted
- * every relative time by the local UTC offset (an alert sent just now read as
- * "in 5 hours"). Every HTTP response carries a Date: header in UTC, so each
- * fetch records (server UTC - console clock); adding that to time(NULL) later
- * reconstructs real UTC without needing NTP or a time zone setting.
- */
+/* The Wii clock is console-local with no zone info, but alert epochs are UTC.
+ * Record (Date: header - time(NULL)) each fetch to reconstruct real UTC. */
 static s64 s_utc_offset;
 static int s_utc_offset_known;
 

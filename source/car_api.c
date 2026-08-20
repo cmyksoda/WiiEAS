@@ -12,10 +12,8 @@
 #include <string.h>
 #include <ctype.h>
 
-/*
- * CAR's JSON array is not guaranteed newest-first (the website re-sorts in
- * the browser). We always present newest → oldest by start time, then id.
- */
+/* CAR's array is not guaranteed newest-first (the website re-sorts client-
+ * side); present newest → oldest by start time, then id. */
 static int alert_newer_first(const void *a, const void *b)
 {
 	const CarAlert *x = (const CarAlert *)a;

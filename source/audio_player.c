@@ -1,14 +1,6 @@
-/**
- * Alert audio — libmad decode + ASND (the path that sounded good).
- *
- * - Decode to *native* rate mono s16 (EAS is 16 kHz); pitch = that rate.
- * - Feed ASND with 4096-sample (8192-byte) double buffers like stock MP3Player.
- * - Skip ID3v2 so mad never treats the tag as audio.
- * - Nothing is pinned while idle: the MP3 staging buffer lives only for the
- *   fetch+decode, and the PCM only while a clip is loaded — multi-MB blocks
- *   parked next to FreeType are what used to wipe the UI text.
- * - The PCM grows to fit the whole clip. The old fixed 60 s @ 16 kHz cap
- *   silently truncated the decode, which cut most alerts off at one minute.
+/*
+ * Alert audio: libmad decode to native-rate mono s16, ASND double-buffered
+ * playback. Nothing multi-MB stays allocated while idle.
  */
 #include "audio_player.h"
 #include "car_api.h"
@@ -26,20 +18,12 @@
 
 #define BUF_SAMPLES     4096
 #define NBUFS           2
-/*
- * MP3 staging cap. EAS audio is regulation-capped at two minutes, well under
- * 1 MB at the CDN's mono rates — the old 512 KB cap could truncate the
- * *download* of longer files before the decoder even saw them.
- */
+/* EAS audio is regulation-capped at ~2 min; a smaller cap truncates downloads. */
 #define AUDIO_MP3_CAP   (2u * 1024 * 1024)
 /* First PCM allocation: ~60 s @ 16 kHz. pcm_grow() extends it as the decode
  * demands, up to PCM_MAX_SAMPLES. */
 #define PCM_INITIAL_SAMPLES (60u * 16000u)
-/*
- * Hard ceiling on decoded PCM: 6M samples (12 MB) is over six minutes at
- * 16 kHz — anything longer than this is not a real EAS clip, and unbounded
- * growth next to FreeType is how the UI died once before.
- */
+/* Hard PCM ceiling: 12 MB ≈ 6 min @ 16 kHz — longer than any real EAS clip. */
 #define PCM_MAX_SAMPLES (6u * 1024u * 1024u)
 
 static s16 *s_pcm;
@@ -53,11 +37,8 @@ static int  s_dma_idx;
 static volatile u8 s_running;
 static int  s_ready;
 
-/*
- * Identifies the clip currently sitting in s_pcm — the one-entry cache. Set
- * when a decode succeeds, cleared only when the PCM is released, so it stays
- * valid across a pause and lets a replay skip the download entirely.
- */
+/* Hash of the clip in s_pcm (one-entry cache); survives pause so a replay
+ * skips the download. Cleared only when the PCM is released. */
 static int  s_loaded_hash_set;
 static char s_loaded_hash[CAR_HASH_LEN + 1];
 
@@ -83,13 +64,8 @@ static s16 mad_to_s16(mad_fixed_t sample)
 	return (s16)(sample >> (MAD_F_FRACBITS + 1 - 16));
 }
 
-/*
- * Make the PCM buffer hold at least `need` samples, preserving what has been
- * decoded so far. Decode-time only: the voice callback is guaranteed idle
- * (s_running == 0, playback not yet started), so swapping the pointer is safe.
- * Returns 0 when the buffer is big enough, -1 when it can't be (out of memory
- * or past the hard cap) — the caller then keeps what it has.
- */
+/* Grow s_pcm to >= need samples, preserving decoded data. Decode-time only
+ * (voice callback idle). Returns -1 on OOM or past PCM_MAX_SAMPLES. */
 static int pcm_grow(u32 need)
 {
 	if (need <= s_pcm_cap && s_pcm)
@@ -118,19 +94,14 @@ static int pcm_grow(u32 need)
 
 static void free_pcm(void)
 {
-	/*
-	 * Clear the pointer *before* releasing the block. voice_cb runs off the
-	 * DSP interrupt and reads s_pcm, so it must never be able to see a pointer
-	 * into freed memory — the window switching alerts mid-playback walks
-	 * straight through here.
-	 */
+	/* Clear s_pcm before freeing: voice_cb runs off the DSP interrupt and
+	 * must never see a pointer into freed memory. */
 	s16 *pcm = s_pcm;
 	s_pcm = NULL;
 	s_pcm_cap = 0;
 	s_pcm_len = 0;
 	s_pcm_rpos = 0;
 	s_pcm_rate = 0;
-	/* The hash names what was in this buffer, so it dies with it. */
 	s_loaded_hash_set = 0;
 	s_loaded_hash[0] = '\0';
 	free(pcm);
@@ -186,13 +157,8 @@ static int decode_mp3_native(const u8 *mp3, size_t mp3_len, char *err, size_t er
 
 		if (s_pcm_rate == 0) {
 			s_pcm_rate = synth.pcm.samplerate ? synth.pcm.samplerate : 16000;
-			/*
-			 * Size the buffer for the whole clip in one go: for CBR (which
-			 * these are), samples ≈ bytes * 8 / bitrate * rate. ~6% headroom
-			 * plus one DMA buffer for the tail padding; a VBR undershoot is
-			 * caught by the grow in the append path below. Best effort — on
-			 * failure the append path decides what we keep.
-			 */
+			/* Size for the whole clip up front from the CBR bitrate (+~6%
+			 * headroom); VBR undershoot is caught by the grow below. */
 			if (frame.header.bitrate > 0) {
 				u64 est = (u64)mp3_len * 8u * s_pcm_rate
 				          / frame.header.bitrate;
@@ -203,8 +169,7 @@ static int decode_mp3_native(const u8 *mp3, size_t mp3_len, char *err, size_t er
 			}
 		}
 
-		/* Out of room and can't grow — keep what we have (never silently
-		 * cap at a fixed length again; this is what cut clips at 60 s). */
+		/* Out of room and can't grow — keep what we have. */
 		if (s_pcm_len + ns > s_pcm_cap &&
 		    pcm_grow(s_pcm_len + ns) != 0)
 			break;
@@ -230,8 +195,7 @@ static int decode_mp3_native(const u8 *mp3, size_t mp3_len, char *err, size_t er
 		return -1;
 	}
 
-	/* Pad to a whole DMA buffer — an unpadded tail would be dropped, since
-	 * fill_dma() only copies full BUF_SAMPLES chunks. */
+	/* Pad to a whole DMA buffer — fill_dma() only copies full BUF_SAMPLES chunks. */
 	while (s_pcm_len % BUF_SAMPLES) {
 		if (s_pcm_len + 1 > s_pcm_cap &&
 		    pcm_grow(s_pcm_len + 1) != 0)
@@ -279,8 +243,7 @@ static void voice_cb(s32 voice)
 		commit_dma();
 }
 
-/* `from` is a sample offset; it always lands on a BUF_SAMPLES boundary because
- * that is the only step s_pcm_rpos ever takes. Past the end restarts the clip. */
+/* from: sample offset, always a BUF_SAMPLES multiple. Past the end restarts. */
 static int start_asnd_playback(u32 from)
 {
 	if (!s_pcm || s_pcm_len < BUF_SAMPLES || s_pcm_rate == 0)
@@ -322,8 +285,7 @@ void audio_init(void)
 	for (int i = 0; i < NBUFS; i++)
 		s_dma[i] = (s16 *)memalign(32, BUF_SAMPLES * sizeof(s16));
 
-	/* MP3 staging is allocated per fetch in start_play(); PCM on demand
-	 * during decode. Nothing multi-MB sits on the heap while idle. */
+	/* MP3 staging and PCM are allocated on demand; nothing large sits idle. */
 	s_pcm = NULL;
 	s_pcm_cap = 0;
 	s_pcm_len = s_pcm_rpos = s_pcm_rate = 0;
@@ -346,8 +308,7 @@ void audio_shutdown(void)
 
 void audio_stop(void)
 {
-	/* Do not spin/usleep here — a long loop on the main thread during quit
-	 * has hung real hardware (hold-Start → hard freeze). */
+	/* No spin/usleep here — a long loop on the main thread at quit hangs hardware. */
 	s_running = 0;
 	ASND_StopVoice(0);
 	ASND_StopVoice(0);
@@ -361,12 +322,8 @@ void audio_pause(void)
 	s_running = 0;
 	ASND_StopVoice(0);
 
-	/*
-	 * s_pcm_rpos is the *queued* position, which runs up to NBUFS buffers ahead
-	 * of what the speakers have actually reached. Resuming from it would swallow
-	 * that much audio, so wind back by the queue depth.
-	 * The PCM itself is deliberately kept — that's the cache.
-	 */
+	/* s_pcm_rpos is the queued position, up to NBUFS buffers ahead of the
+	 * speakers — wind back so resume doesn't swallow audio. PCM kept as cache. */
 	u32 queued = (u32)NBUFS * BUF_SAMPLES;
 	s_pcm_rpos = (s_pcm_rpos > queued) ? s_pcm_rpos - queued : 0;
 }
@@ -427,8 +384,7 @@ static int start_play(const CarAlert *alert, audio_progress_fn progress,
 		return -1;
 	}
 
-	/* Decoding a full clip takes real seconds on the Wii — say so instead of
-	 * letting "Downloading..." sit there after the download has finished. */
+	/* Decoding takes real seconds on the Wii — don't leave "Downloading..." up. */
 	if (progress)
 		progress("Decoding audio...");
 
@@ -439,8 +395,7 @@ static int start_play(const CarAlert *alert, audio_progress_fn progress,
 		return -1;
 	}
 
-	/* Name the buffer before playing it: from here on the clip is cacheable,
-	 * and free_pcm() is the only thing that takes the name back. */
+	/* Clip is now cacheable; only free_pcm() clears the hash. */
 	if (alert->hash[0]) {
 		snprintf(s_loaded_hash, sizeof(s_loaded_hash), "%s", alert->hash);
 		s_loaded_hash_set = 1;
@@ -459,11 +414,11 @@ static int start_play(const CarAlert *alert, audio_progress_fn progress,
 int audio_play_alert(const CarAlert *alert, audio_progress_fn progress,
                      char *err, size_t err_len)
 {
-	/* Already decoded? Pick up where the pause left off — no network at all. */
+	/* Already decoded? Resume from the pause point — no network at all. */
 	if (audio_alert_cached(alert)) {
 		if (start_asnd_playback(s_pcm_rpos) == 0)
 			return 0;
-		/* Cache unusable for some reason — drop it and fetch again. */
+		/* Cache unusable — drop it and fetch again. */
 		audio_stop();
 	}
 	return start_play(alert, progress, err, err_len);
