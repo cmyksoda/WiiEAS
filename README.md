@@ -1,10 +1,20 @@
 # WiiEAS
 
-Live **Emergency Alert System** alerts on the Nintendo Wii, drawn to resemble a **DASDEC** emergency alert screen — purple-blue field, red border, white monospaced text, page flips for long messages.
+Live **Emergency Alert System** alerts from across the United States on the Nintendo Wii, drawn to resemble a **DASDEC** emergency alert screen — purple-blue field, red border, white monospaced text, page flips for long messages.
 
 Data comes from the free public [GlobalEAS Central Alert Repository](https://alerts.globaleas.org/) API. Audio is the official MP3 hosted on their CDN.
 
 > **Idea credit:** [RetrokVR](https://gbatemp.net/threads/idea-simple-eas-alert-app-channel-using-globaleas-api.682538/) floated this as a homebrew wish-list item in June 2026. This project picks that idea up; they offered to help test on hardware.
+
+## ⚠️ IMPORTANT SAFETY WARNING & DISCLAIMER
+
+**This app plays live, authentic Emergency Alert System (EAS) audio tones and data headers.**
+
+*   **Do not play this audio over public speakers, microphones, or live streams.**
+*   **Do not use this app near open microphones, radios, or smart home devices.**
+*   **Keep your TV volume low, or use headphones.**
+
+The audio signals streamed in this app contain unmodified SAME data codes, which if picked up by a nearby microphone, smart speaker, ham radio, or PC running decoder software, could accidentally trigger real emergency alert systems. Broadcasting these tones over the internet or over radio waves may violate federal laws and result in severe penalties.
 
 ## Features
 
@@ -12,7 +22,7 @@ Data comes from the free public [GlobalEAS Central Alert Repository](https://ale
 - **Active alerts** from across the United States
 - **Details panel** (sent time, expiration time, alert type, callsign, originator)
 - **Consistently polls** the API every 60s (same cadence as the CAR website)
-- **Auto play** if left on, new alerts will automatically play as they are retrieved.
+- **Auto play**: if left on, new alerts will automatically play as they are retrieved.
 
 ## Build
 
