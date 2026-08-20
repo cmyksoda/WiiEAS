@@ -17,9 +17,8 @@ DATA		:=	data
 INCLUDES	:=	source
 
 # mbedTLS 3.6.3 for PPC, vendored in-repo (libs/mbedtls) so a bare clone
-# builds — devkitPro ships no ppc-mbedtls package. Built with WiiFin's config
-# (MBEDTLS_ENTROPY_HARDWARE_ALT; see source/wii_entropy.c). Override to use
-# your own build:
+# builds — devkitPro ships no ppc-mbedtls package. Config enables
+# MBEDTLS_ENTROPY_HARDWARE_ALT (see source/wii_entropy.c). Override:
 #   make MBEDTLS_INC=/path/to/include MBEDTLS_LIB=/path/to/lib
 MBEDTLS_INC	?=	$(CURDIR)/libs/mbedtls/include
 MBEDTLS_LIB	?=	$(CURDIR)/libs/mbedtls/lib
@@ -34,9 +33,9 @@ ASFLAGS		:=	-g $(MACHDEP)
 LDFLAGS		=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
 
 #---------------------------------------------------------------------------------
-# Link order matters: mbedTLS first, then mad/asnd, then graphics deps, then ogc.
+# Link order matters: mbedTLS first, then mad/asnd, then graphics deps,
+# wiiuse before bte, then ogc.
 #---------------------------------------------------------------------------------
-# wiiuse before bte (VectrexWii / stock homebrew link order)
 LIBS	:=	-lmbedtls -lmbedx509 -lmbedcrypto \
 		-lmad -lasnd \
 		-lgrrlib -lfreetype -lpngu -lpng -ljpeg \
