@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <malloc.h>
-#include <unistd.h>
 
 #include <gccore.h>
 #include <ogc/cache.h>
@@ -287,7 +286,6 @@ void audio_init(void)
 	for (int i = 0; i < NBUFS; i++)
 		s_dma[i] = (s16 *)memalign(32, BUF_SAMPLES * sizeof(s16));
 
-	/* MP3 staging and PCM are allocated on demand; nothing large sits idle. */
 	s_pcm = NULL;
 	s_pcm_cap = 0;
 	s_pcm_len = s_pcm_rpos = s_pcm_rate = 0;
@@ -312,7 +310,6 @@ void audio_stop(void)
 {
 	/* No spin/usleep here — a long loop on the main thread at quit hangs hardware. */
 	s_running = 0;
-	ASND_StopVoice(0);
 	ASND_StopVoice(0);
 	free_pcm();
 }

@@ -160,81 +160,41 @@ static void trim_callsign(char *s)
 		s[--n] = '\0';
 }
 
-/* Parse one AlertEntity object between { and }. */
+static void get_str(const char *obj, const char *end, const char *key,
+                    char *out, size_t cap)
+{
+	const char *p = find_key(obj, end, key);
+	if (p)
+		decode_json_string(&p, end, out, cap);
+}
+
+static void get_int(const char *obj, const char *end, const char *key, s64 *out)
+{
+	const char *p = find_key(obj, end, key);
+	if (p)
+		parse_json_int(&p, end, out);
+}
+
+/* Parse one AlertEntity object between { and }. Missing or null fields stay
+ * zeroed (decode_json_string rejects a non-string without writing). */
 static int parse_alert_object(const char *obj, const char *obj_end, CarAlert *a)
 {
 	memset(a, 0, sizeof(*a));
 
-	const char *v;
-	const char *p;
+	s64 id = 0;
+	get_int(obj, obj_end, "id", &id);
+	a->id = (int)id;
 
-	v = find_key(obj, obj_end, "id");
-	if (v) {
-		s64 id = 0;
-		p = v;
-		if (parse_json_int(&p, obj_end, &id) == 0)
-			a->id = (int)id;
-	}
-
-	v = find_key(obj, obj_end, "hash");
-	if (v) {
-		p = v;
-		decode_json_string(&p, obj_end, a->hash, sizeof(a->hash));
-	}
-
-	v = find_key(obj, obj_end, "type");
-	if (v) {
-		p = v;
-		decode_json_string(&p, obj_end, a->type, sizeof(a->type));
-	}
-
-	v = find_key(obj, obj_end, "severity");
-	if (v) {
-		p = v;
-		decode_json_string(&p, obj_end, a->severity, sizeof(a->severity));
-	}
-
-	v = find_key(obj, obj_end, "originator");
-	if (v) {
-		p = v;
-		decode_json_string(&p, obj_end, a->originator, sizeof(a->originator));
-	}
-
-	v = find_key(obj, obj_end, "callsign");
-	if (v) {
-		p = v;
-		decode_json_string(&p, obj_end, a->callsign, sizeof(a->callsign));
-		trim_callsign(a->callsign);
-	}
-
-	v = find_key(obj, obj_end, "startTimeEpoch");
-	if (v) {
-		p = v;
-		parse_json_int(&p, obj_end, &a->start_epoch);
-	}
-
-	v = find_key(obj, obj_end, "endTimeEpoch");
-	if (v) {
-		p = v;
-		parse_json_int(&p, obj_end, &a->end_epoch);
-	}
-
-	v = find_key(obj, obj_end, "translation");
-	if (v) {
-		p = v;
-		decode_json_string(&p, obj_end, a->translation, sizeof(a->translation));
-	}
-
-	v = find_key(obj, obj_end, "audioUrl");
-	if (v) {
-		p = skip_ws(v);
-		if (p < obj_end && *p == 'n') {
-			/* null */
-			a->audio_url[0] = '\0';
-		} else {
-			decode_json_string(&p, obj_end, a->audio_url, sizeof(a->audio_url));
-		}
-	}
+	get_str(obj, obj_end, "hash", a->hash, sizeof(a->hash));
+	get_str(obj, obj_end, "type", a->type, sizeof(a->type));
+	get_str(obj, obj_end, "severity", a->severity, sizeof(a->severity));
+	get_str(obj, obj_end, "originator", a->originator, sizeof(a->originator));
+	get_str(obj, obj_end, "callsign", a->callsign, sizeof(a->callsign));
+	trim_callsign(a->callsign);
+	get_int(obj, obj_end, "startTimeEpoch", &a->start_epoch);
+	get_int(obj, obj_end, "endTimeEpoch", &a->end_epoch);
+	get_str(obj, obj_end, "translation", a->translation, sizeof(a->translation));
+	get_str(obj, obj_end, "audioUrl", a->audio_url, sizeof(a->audio_url));
 
 	/* Require at least a hash or translation to count as a real alert. */
 	return (a->hash[0] || a->translation[0]) ? 0 : -1;

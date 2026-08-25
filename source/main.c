@@ -8,11 +8,7 @@
 #include <string.h>
 
 #include <gccore.h>
-#include <ogcsys.h>
-#include <ogc/system.h>
-#include <ogc/video.h>
 #include <grrlib.h>
-#include <wiiuse/wpad.h>
 
 #include "http_tls.h"
 #include "car_api.h"
@@ -181,7 +177,7 @@ static int refresh_alerts(int *out_new_index)
 	if (g_list.count > 0 && g_index >= 0 && g_index < g_list.count)
 		snprintf(cur_hash, sizeof(cur_hash), "%s", g_list.alerts[g_index].hash);
 
-	/* Find first brand-new alert (API returns newest first). */
+	/* Find first brand-new alert (list is sorted newest first). */
 	int first_new = -1;
 	for (int i = 0; i < fresh.count; i++) {
 		if (!hash_seen(fresh.alerts[i].hash)) {
@@ -278,9 +274,7 @@ int main(int argc, char **argv)
 	input_init();
 	audio_init();
 
-	if (dasdec_init() != 0) {
-		/* Still runnable; text just won't show. */
-	}
+	(void)dasdec_init(); /* font failure is non-fatal: text just won't show */
 
 	g_list.count = 0;
 	g_index = 0;
@@ -308,8 +302,7 @@ int main(int argc, char **argv)
 
 	/* Seed "seen" with everything already active so first launch doesn't
 	 * blast every open alert's audio; new arrivals still auto-play. */
-	int dummy;
-	if (refresh_alerts(&dummy) >= 0) {
+	if (refresh_alerts(NULL) >= 0) {
 		for (int i = 0; i < g_list.count; i++)
 			mark_seen(g_list.alerts[i].hash);
 	}
@@ -387,7 +380,6 @@ int main(int argc, char **argv)
 		if (!show_details)
 			dasdec_auto_page_tick();
 
-		/* Periodic poll for new alerts */
 		poll_frames++;
 		if (poll_frames >= POLL_INTERVAL_FRAMES) {
 			poll_frames = 0;
@@ -397,7 +389,6 @@ int main(int argc, char **argv)
 				pending_new = new_idx;
 		}
 
-		/* When idle *and* you're not mid-browse, auto-play the pending alert */
 		if (pending_new >= 0 && g_auto_play && !audio_is_playing()
 		    && manual_hold_frames == 0) {
 			if (pending_new < g_list.count) {

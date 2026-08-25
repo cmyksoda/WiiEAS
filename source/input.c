@@ -7,7 +7,6 @@
 #include <string.h>
 #include <wiiuse/wpad.h>
 #include <ogc/pad.h>
-#include <gccore.h>
 #include <grrlib.h>
 
 #define STICK_DZ_MAG 0.45f
@@ -16,84 +15,54 @@
 static int s_home_held;
 static u8  s_fmt_done[4];   /* format applied since this channel last connected */
 
+/* Held D-pad bits for an analogue stick, or 0 inside the deadzone. */
+static u32 stick_dir(float mag, float ang)
+{
+	if (mag < STICK_DZ_MAG)
+		return 0;
+	if (ang >= 315.0f || ang < 45.0f)
+		return WPAD_BUTTON_UP;
+	if (ang < 135.0f)
+		return WPAD_BUTTON_RIGHT;
+	if (ang < 225.0f)
+		return WPAD_BUTTON_DOWN;
+	return WPAD_BUTTON_LEFT;
+}
+
 static u32 expansion_edges_chan0(void)
 {
-	static u8 was_up, was_down, was_left, was_right;
+	static u32 was;
 	expansion_t exp;
-	u32 down = 0;
-	u8 is_up = 0, is_down = 0, is_left = 0, is_right = 0;
+	u32 is = 0;
 
 	/* WPAD_Expansion leaves exp untouched with nothing connected — zero it so
 	 * a garbage type can't feed phantom D-pad edges (WPAD_EXP_NONE == 0). */
 	memset(&exp, 0, sizeof(exp));
 	WPAD_Expansion(0, &exp);
 
-	if (exp.type == WPAD_EXP_NUNCHUK) {
-		if (exp.nunchuk.js.mag >= STICK_DZ_MAG) {
-			float a = exp.nunchuk.js.ang;
-			if (a >= 315.0f || a < 45.0f)
-				is_up = 1;
-			else if (a >= 45.0f && a < 135.0f)
-				is_right = 1;
-			else if (a >= 135.0f && a < 225.0f)
-				is_down = 1;
-			else
-				is_left = 1;
-		}
-	} else if (exp.type == WPAD_EXP_CLASSIC) {
-		if (exp.classic.ljs.mag >= STICK_DZ_MAG) {
-			float a = exp.classic.ljs.ang;
-			if (a >= 315.0f || a < 45.0f)
-				is_up = 1;
-			else if (a >= 45.0f && a < 135.0f)
-				is_right = 1;
-			else if (a >= 135.0f && a < 225.0f)
-				is_down = 1;
-			else
-				is_left = 1;
-		}
-	} else {
-		was_up = was_down = was_left = was_right = 0;
-		return 0;
-	}
+	if (exp.type == WPAD_EXP_NUNCHUK)
+		is = stick_dir(exp.nunchuk.js.mag, exp.nunchuk.js.ang);
+	else if (exp.type == WPAD_EXP_CLASSIC)
+		is = stick_dir(exp.classic.ljs.mag, exp.classic.ljs.ang);
 
-	if (is_up && !was_up)
-		down |= WPAD_BUTTON_UP;
-	if (is_down && !was_down)
-		down |= WPAD_BUTTON_DOWN;
-	if (is_left && !was_left)
-		down |= WPAD_BUTTON_LEFT;
-	if (is_right && !was_right)
-		down |= WPAD_BUTTON_RIGHT;
-
-	was_up = is_up;
-	was_down = is_down;
-	was_left = is_left;
-	was_right = is_right;
+	u32 down = is & ~was;
+	was = is;
 	return down;
 }
 
 static u32 gc_stick_edges(void)
 {
-	static u8 was_up, was_down, was_left, was_right;
+	static u32 was;
 	s8 x = PAD_StickX(0), y = PAD_StickY(0);
-	u8 is_up = y > GC_STICK_DZ, is_down = y < -GC_STICK_DZ;
-	u8 is_left = x < -GC_STICK_DZ, is_right = x > GC_STICK_DZ;
-	u32 down = 0;
+	u32 is = 0;
 
-	if (is_up && !was_up)
-		down |= PAD_BUTTON_UP;
-	if (is_down && !was_down)
-		down |= PAD_BUTTON_DOWN;
-	if (is_left && !was_left)
-		down |= PAD_BUTTON_LEFT;
-	if (is_right && !was_right)
-		down |= PAD_BUTTON_RIGHT;
+	if (y >  GC_STICK_DZ) is |= PAD_BUTTON_UP;
+	if (y < -GC_STICK_DZ) is |= PAD_BUTTON_DOWN;
+	if (x < -GC_STICK_DZ) is |= PAD_BUTTON_LEFT;
+	if (x >  GC_STICK_DZ) is |= PAD_BUTTON_RIGHT;
 
-	was_up = is_up;
-	was_down = is_down;
-	was_left = is_left;
-	was_right = is_right;
+	u32 down = is & ~was;
+	was = is;
 	return down;
 }
 

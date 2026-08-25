@@ -5,7 +5,6 @@
 #include "dasdec.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
@@ -21,7 +20,7 @@
 #define FONT_SIZE_BODY      20
 #define FONT_SIZE_HDR       18
 #define FONT_SIZE_PAGE      16
-#define FONT_SIZE_PANEL     16
+#define FONT_SIZE_PANEL     15
 #define FONT_SIZE_CHROME    12
 /* Page dwell in frames, not ms — ticks_to_millisecs runs hot on Dolphin.
  * 300 ≈ 5 s at 60 Hz, 6 s at 50 Hz PAL. */
@@ -51,7 +50,7 @@ typedef struct {
 	char severity[CAR_SEV_LEN];
 	char callsign[CAR_CALL_LEN];
 	char originator[CAR_ORIG_LEN];
-	char hash[CAR_HASH_LEN + 1]; /* full 40-char CAR hash */
+	char hash[CAR_HASH_LEN + 1];
 	s64  start_epoch;
 	s64  end_epoch;
 	u32  page_frames; /* frames spent on current page (for auto-advance) */
@@ -133,7 +132,6 @@ static void wrap_text(const char *text)
 
 	const char *p = text;
 	while (*p && s.line_count < MAX_LINES_TOTAL) {
-		/* Newlines force a break. */
 		if (*p == '\n' || *p == '\r') {
 			push_line(line);
 			line[0] = '\0';
@@ -144,7 +142,6 @@ static void wrap_text(const char *text)
 			continue;
 		}
 
-		/* Skip ordinary spaces at the start of a line. */
 		if (isspace((unsigned char)*p)) {
 			if (line_len == 0) {
 				p++;
@@ -152,7 +149,6 @@ static void wrap_text(const char *text)
 			}
 		}
 
-		/* Collect next word (or single non-space run). */
 		const char *wstart = p;
 		while (*p && !isspace((unsigned char)*p) && *p != '\n' && *p != '\r')
 			p++;
@@ -168,7 +164,6 @@ static void wrap_text(const char *text)
 		memcpy(word, wstart, wlen);
 		word[wlen] = '\0';
 
-		/* Try "line + space + word" (or just word if line empty). */
 		char trial[MAX_LINE_CHARS];
 		if (line_len == 0)
 			snprintf(trial, sizeof(trial), "%s", word);
@@ -181,7 +176,6 @@ static void wrap_text(const char *text)
 			continue;
 		}
 
-		/* Doesn't fit: flush current line first. */
 		if (line_len > 0) {
 			push_line(line);
 			line[0] = '\0';
@@ -224,19 +218,13 @@ static void wrap_text(const char *text)
 		push_line("(no message text)");
 
 	s.page_count = (s.line_count + MAX_LINES_PER_PAGE - 1) / MAX_LINES_PER_PAGE;
-	if (s.page_count < 1)
-		s.page_count = 1;
-	if (s.page_count > MAX_PAGES)
-		s.page_count = MAX_PAGES;
 	s.page = 0;
 }
 
 void dasdec_set_message(const char *msg)
 {
 	clear_layout();
-	s.has_alert = 0;
 	push_line((msg && msg[0]) ? msg : "");
-	s.page_count = 1;
 }
 
 void dasdec_set_alert(const CarAlert *alert, int index, int total)
@@ -244,12 +232,9 @@ void dasdec_set_alert(const CarAlert *alert, int index, int total)
 	clear_layout();
 	s.index = index;
 	s.total = total;
-	s.page_frames = 0;
-	s.has_alert = 0;
 
 	if (!alert) {
 		push_line("NO ACTIVE ALERTS");
-		s.page_count = 1;
 		return;
 	}
 
@@ -408,7 +393,7 @@ static void draw_details_panel(void)
 	const f32 panel_x = (scr_w - panel_w) * 0.5f;
 	const f32 panel_y = (scr_h - panel_h) * 0.5f - 6.0f;
 	const f32 thick = 6.0f;
-	const unsigned body = 15; /* every row same size — incl. ID */
+	const unsigned body = FONT_SIZE_PANEL; /* every row same size — incl. ID */
 
 	GRRLIB_Rectangle(panel_x, panel_y, panel_w, panel_h, DASDEC_BG, true);
 	draw_border_box(panel_x, panel_y, panel_w, panel_h, thick, DASDEC_BORDER);
@@ -513,12 +498,9 @@ void dasdec_draw(const char *status_line, int auto_play, int show_details)
 	/* Centered body text for the current page (authentic DASDEC). */
 	const int line_h = FONT_SIZE_BODY + 8;
 	const int first = s.page * MAX_LINES_PER_PAGE;
-	int lines_this = 0;
-	for (int i = 0; i < MAX_LINES_PER_PAGE; i++) {
-		if (first + i >= s.line_count)
-			break;
-		lines_this++;
-	}
+	int lines_this = s.line_count - first;
+	if (lines_this > MAX_LINES_PER_PAGE)
+		lines_this = MAX_LINES_PER_PAGE;
 	/* Vertically centre the block in the usable area above the page counter. */
 	const int text_bottom = page_y - 8;
 	const int block_h = lines_this > 0 ? (lines_this * line_h) : line_h;

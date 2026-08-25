@@ -9,12 +9,10 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
-#include <unistd.h>
 #include <errno.h>
 
 #include <network.h>
 #include <ogc/if_config.h>
-#include <ogcsys.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/filio.h>
@@ -24,7 +22,6 @@
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/error.h>
 #include <mbedtls/net_sockets.h>
-#include <mbedtls/x509_crt.h>
 
 static void set_err(char *err, size_t err_len, const char *msg)
 {
