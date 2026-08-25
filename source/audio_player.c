@@ -25,6 +25,8 @@
 #define PCM_INITIAL_SAMPLES (60u * 16000u)
 /* Hard PCM ceiling: 12 MB ≈ 6 min @ 16 kHz — longer than any real EAS clip. */
 #define PCM_MAX_SAMPLES (6u * 1024u * 1024u)
+/* Output gain — OSC review found full-scale playback far too loud on a TV. */
+#define OUTPUT_GAIN_PCT 30
 
 static s16 *s_pcm;
 static u32  s_pcm_cap;
@@ -180,7 +182,7 @@ static int decode_mp3_native(const u8 *mp3, size_t mp3_len, char *err, size_t er
 				s16 r = mad_to_s16(synth.pcm.samples[1][i]);
 				s = (s16)(((int)s + (int)r) / 2);
 			}
-			s_pcm[s_pcm_len++] = s;
+			s_pcm[s_pcm_len++] = (s16)((int)s * OUTPUT_GAIN_PCT / 100);
 		}
 	}
 
