@@ -73,6 +73,7 @@ static int decode_json_string(const char **pp, const char *end, char *out, size_
 	if (p >= end || *p != '"')
 		return -1;
 	p++;
+
 	size_t o = 0;
 	while (p < end && *p != '"') {
 		unsigned char c = (unsigned char)*p++;
@@ -100,6 +101,7 @@ static int decode_json_string(const char **pp, const char *end, char *out, size_
 					else if (h >= 'A' && h <= 'F') cp |= (unsigned)(h - 'A' + 10);
 					else return -1;
 				}
+
 				if (cp == 0x00A0) c = ' ';
 				else if (cp == 0x2013 || cp == 0x2014) c = '-';
 				else if (cp == 0x2018 || cp == 0x2019) c = '\'';
@@ -107,7 +109,9 @@ static int decode_json_string(const char **pp, const char *end, char *out, size_
 				else if (cp < 0x80) c = (unsigned char)cp;
 				else if (cp == 0x2026) {
 					if (o + 3 < out_cap) {
-						out[o++] = '.'; out[o++] = '.'; out[o++] = '.';
+						out[o++] = '.';
+						out[o++] = '.';
+						out[o++] = '.';
 					}
 					continue;
 				} else
@@ -122,6 +126,7 @@ static int decode_json_string(const char **pp, const char *end, char *out, size_
 		if (o + 1 < out_cap)
 			out[o++] = (char)c;
 	}
+
 	if (p >= end || *p != '"')
 		return -1;
 	p++;
@@ -223,6 +228,7 @@ static int parse_alert_array(const char *json, size_t json_len, CarAlertList *ou
 			p++;
 			continue;
 		}
+
 		/* Find matching close brace (strings may contain braces — track quotes). */
 		const char *start = p;
 		int depth = 0;
