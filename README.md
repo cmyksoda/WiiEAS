@@ -74,3 +74,7 @@ This is a **fan / homebrew viewer** of publicly syndicated EAS data. It is **not
 
 Code in this repo: GPLv3. Font is Luxi Mono Bold (Bigelow & Holmes - Luxi License).  
 GlobalEAS data/audio: as published by GWES (public alert archive).
+
+---
+
+*This project was made with AI assistance. For more information, see [my AI usage statement](https://github.com/cmyksoda/cmyksoda/blob/main/AI_USAGE.md).*
