@@ -1,7 +1,7 @@
 /**
  * Central Alert Repository client.
  * API: https://alerts.globaleas.org/swagger/v1/swagger.json
- *   GET /api/v1/alerts/active  -> AlertEntity[]
+ *   GET /api/v2/alerts/active  -> AlertEntity[]
  * Audio: https://vroom.gwes-cdn.net/<hash>.mp3
  */
 #include "car_api.h"
@@ -33,7 +33,7 @@ static void sort_alerts_newest_first(CarAlertList *list)
 }
 
 #define CAR_HOST "alerts.globaleas.org"
-#define CAR_PATH "/api/v1/alerts/active"
+#define CAR_PATH "/api/v2/alerts/active"
 #define CAR_JSON_CAP (256 * 1024)
 
 /* ---- minimal JSON field helpers (no full parser needed for this schema) ---- */
