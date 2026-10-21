@@ -70,9 +70,19 @@ Documented at https://alerts.globaleas.org/swagger/index.html:
 
 This is a **fan / homebrew viewer** of publicly syndicated EAS data. It is **not** an official warning device, not a substitute for NOAA Weather Radio / WEA / local broadcast, and not affiliated with GlobalEAS, Digital Alert Systems, or any government agency.
 
+## Credits
+
+- **GlobalEAS Central Alert Repository**, the free public API behind the alerts and their official audio ([alerts.globaleas.org](https://alerts.globaleas.org/))
+- **Luxi Mono Bold** by Kris Holmes and Charles Bigelow (Bigelow & Holmes Inc.), with hinting instructions by URW++, the font used for the on-screen text. © 2001 Bigelow & Holmes Inc. Luxi is a registered trademark of Bigelow & Holmes Inc.
+- **Mbed TLS** by the Mbed TLS Contributors, vendored in `libs/mbedtls/` (version 3.6.3), for HTTPS
+- **libmad** by Underbit Technologies, Inc., for decoding the alert MP3s
+- **GRRLIB** by The GRRLIB Team, for drawing the screen, with **FreeType** for the text
+- **libogc** by Michael Wiedenbauer (shagkur) and Dave Murphy (WinterMute), and **devkitPPC** by devkitPro, with **ASND** by Hermes for sound playback
+
 ## License
 
-Code in this repo: GPLv3. Font is Luxi Mono Bold (Bigelow & Holmes - Luxi License).  
+The code in this repo is free software under the [GNU General Public License, version 3](LICENSE). Some parts use other licenses: the font is Luxi Mono Bold (Bigelow & Holmes - Luxi License), the vendored Mbed TLS is under the Apache License 2.0 or GPL version 2 or later, and the other libraries keep their own licenses.
+
 GlobalEAS data/audio: as published by GWES (public alert archive).
 
 ---
