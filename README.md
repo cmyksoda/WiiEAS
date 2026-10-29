@@ -81,7 +81,7 @@ This is a **fan / homebrew viewer** of publicly syndicated EAS data. It is **not
 
 ## License
 
-The code in this repo is free software under the [GNU General Public License, version 3](LICENSE). Some parts use other licenses: the font is Luxi Mono Bold (Bigelow & Holmes - Luxi License), the vendored Mbed TLS is under the Apache License 2.0 or GPL version 2 or later, and the other libraries keep their own licenses.
+The code in this repo is free software under the [GNU General Public License, version 3 or later](LICENSE). Some parts use other licenses: the font is Luxi Mono Bold (Bigelow & Holmes - Luxi License), the vendored Mbed TLS is under the Apache License 2.0 or GPL version 2 or later, and the other libraries keep their own licenses.
 
 GlobalEAS data/audio: as published by GWES (public alert archive).
 
