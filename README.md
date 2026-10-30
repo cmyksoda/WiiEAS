@@ -63,7 +63,7 @@ A second status line is persistently shown on the bottom bezel, which shows how 
 
 Documented at https://alerts.globaleas.org/swagger/index.html:
 
-- `GET /api/v1/alerts/active` → array of alerts  
+- `GET /api/v2/alerts/active` → array of alerts  
 - Each alert has `translation` (display text) and `audioUrl` (MP3)
 
 ## Notice

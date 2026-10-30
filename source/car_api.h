@@ -31,7 +31,7 @@ typedef struct {
 	int      count;
 } CarAlertList;
 
-/* Fetch https://alerts.globaleas.org/api/v1/alerts/active into out.
+/* Fetch https://alerts.globaleas.org/api/v2/alerts/active into out.
  * Returns 0 on success, -1 on failure (err filled if provided). */
 int car_fetch_active(CarAlertList *out, char *err, size_t err_len);
 
