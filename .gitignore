@@ -8,3 +8,4 @@ project-notes/
 *.d
 *.xcf
 .DS_Store
+portlibs/
