@@ -12,16 +12,16 @@
 #include <errno.h>
 
 #include <network.h>
-#include <ogc/if_config.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <sys/filio.h>
 
 #include <mbedtls/ssl.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/error.h>
-#include <mbedtls/net_sockets.h>
+/* libogc2 has no BSD socket headers, so mbedtls/net_sockets.h is out; these two codes are all this file needs from it. */
+#ifndef MBEDTLS_ERR_NET_SEND_FAILED
+#define MBEDTLS_ERR_NET_SEND_FAILED -0x004E
+#define MBEDTLS_ERR_NET_RECV_FAILED -0x004C
+#endif
 
 static void set_err(char *err, size_t err_len, const char *msg)
 {
@@ -121,10 +121,20 @@ static int wii_tls_recv(void *ctx, unsigned char *buf, size_t len)
 	return ret;
 }
 
+/* The portlibs' mbedtls was built for libogc3, which has inet_pton(); libogc2 has not.
+ * mbedtls only calls it to see whether a name is an IP literal: IPv4 through inet_aton,
+ * IPv6 reported as "not an address". */
+int inet_pton(int af, const char *src, void *dst)
+{
+	if (af != 2 /* AF_INET */)
+		return 0;
+	return inet_aton(src, (struct in_addr *)dst) ? 1 : 0;
+}
+
 int net_bringup(char *ip_out, size_t ip_out_len)
 {
 	char ip[16], mask[16], gw[16];
-	s32 ret = if_config(ip, mask, gw, true, 20);
+	s32 ret = if_config(ip, mask, gw, true);
 	if (ret < 0)
 		return -1;
 	if (ip_out && ip_out_len)
